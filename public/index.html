@@ -1,80 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sabai Books — Read something today</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sabai Books — Lectures</title>
 </head>
 <body>
-  <div class="topbar">
-    <a href="/" class="brand"><span class="mark">📖</span> Sabai Books</a>
-    <nav class="nav" id="nav-auth"></nav>
-  </div>
-
-  <main>
-    <h1>Find your next book</h1>
-    <p class="muted" style="margin-bottom:20px">Books, free lectures, and study materials — search, read, and keep learning where you left off.</p>
-
-    <div class="searchbar">
-      <input type="text" id="q" placeholder="Search by title, author, or category…" />
-      <div class="filters">
-        <button class="chip active" data-filter="all">All</button>
-        <button class="chip" data-filter="free">Free</button>
-        <button class="chip" data-filter="paid">$0.50</button>
-      </div>
-    </div>
-
-    <div id="grid" class="grid"></div>
-    <div id="empty" class="empty" style="display:none">No books match that search.</div>
-  </main>
-
-  <script src="/app.js"></script>
   <script>
-    let filter = 'all';
-
-    async function load() {
-      const q = document.getElementById('q').value.trim();
-      const { data } = await api.get(`/api/books?q=${encodeURIComponent(q)}&filter=${filter}`);
-      const grid = document.getElementById('grid');
-      const empty = document.getElementById('empty');
-      if (!data.books.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
-      empty.style.display = 'none';
-      grid.innerHTML = data.books.map(cardHtml).join('');
-    }
-
-    function cardHtml(b) {
-      const initial = b.title.trim()[0] || '?';
-      return `
-        <a class="card" href="/book.html?id=${b.id}">
-          <div class="spine">
-            <span class="cat">${escapeHtml(b.category)}</span>
-          </div>
-          <div class="card-body">
-            <h3>${escapeHtml(b.title)}</h3>
-            <div class="author">by ${escapeHtml(b.author)}</div>
-            <div class="badge-row">
-              <span class="tag ${b.isFree ? 'tag-free' : 'tag-paid'}">${b.isFree ? 'Free' : money(b.price)}</span>
-            </div>
-          </div>
-        </a>`;
-    }
-
-    document.getElementById('q').addEventListener('input', debounce(load, 200));
-    document.querySelectorAll('.chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        filter = chip.dataset.filter;
-        load();
-      });
-    });
-
-    function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
-
-    (async () => { await initAuth(); load(); })();
+    window.location.replace("/lectures.html");
   </script>
+  <p>Opening Lectures...</p>
+  <p><a href="/lectures.html">Open Lectures</a></p>
 </body>
 </html>
