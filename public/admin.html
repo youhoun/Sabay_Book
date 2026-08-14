@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Sabai Books</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a href="/" class="brand"><span class="mark">📖</span> Sabai Books</a>
+    <nav class="nav" id="nav-auth"></nav>
+  </div>
+
+  <main>
+    <h1>Admin dashboard</h1>
+    <div id="gate"></div>
+    <div id="app" style="display:none">
+      <div class="stats" id="stats"></div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="books">Books</button>
+        <button class="tab" data-tab="users">Users</button>
+        <button class="tab" data-tab="orders">Orders</button>
+      </div>
+
+      <div id="tab-books"></div>
+      <div id="tab-users" style="display:none"></div>
+      <div id="tab-orders" style="display:none"></div>
+    </div>
+  </main>
+
+  <div class="overlay" id="book-overlay">
+    <div class="modal" style="max-width:480px">
+      <h2 id="book-form-title">Add book</h2>
+      <input type="hidden" id="book-id" />
+      <div class="field"><label>Title</label><input type="text" id="f-title" /></div>
+      <div class="field"><label>Author</label><input type="text" id="f-author" /></div>
+      <div class="field"><label>Category</label><input type="text" id="f-category" placeholder="e.g. Culture, Language, Business" /></div>
+      <div class="field"><label>Description</label><textarea id="f-description" style="min-height:60px"></textarea></div>
+      <div class="field"><label>Content (lesson / book text)</label><textarea id="f-content"></textarea></div>
+      <label style="display:flex;gap:8px;align-items:center;font-size:.9rem;margin-bottom:16px">
+        <input type="checkbox" id="f-free" /> Free (unchecked = $0.50)
+      </label>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary btn-block" id="book-save">Save</button>
+        <button class="btn btn-outline btn-block" id="book-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    async function boot() {
+      await initAuth();
+      const gate = document.getElementById('gate');
+      if (!CURRENT_USER) {
+        gate.innerHTML = `<div class="empty">Log in as an admin to view this page.<br><br><button class="btn btn-primary" id="login-cta">Log in</button></div>`;
+        document.getElementById('login-cta').onclick = openLoginModal;
+        return;
+      }
+      if (CURRENT_USER.role !== 'admin') {
+        gate.innerHTML = `<div class="empty">Your account (${escapeHtml(CURRENT_USER.email)}) isn't an admin.<br>Your account must be assigned the admin role by the server. Add your email to `ADMIN_EMAILS` before logging in.</div>`;
+        return;
+      }
+      document.getElementById('app').style.display = 'block';
+      loadStats();
+      loadBooks();
+    }
+
+    // ---- tabs ----
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.onclick = () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        ['books', 'users', 'orders'].forEach(t => document.getElementById(`tab-${t}`).style.display = t === tab.dataset.tab ? 'block' : 'none');
+        if (tab.dataset.tab === 'users') loadUsers();
+        if (tab.dataset.tab === 'orders') loadOrders();
+      };
+    });
+
+    // ---- stats ----
+    async function loadStats() {
+      const { data } = await api.get('/api/admin/stats');
+      document.getElementById('stats').innerHTML = `
+        ${stat(data.totalUsers, 'Users')}
+        ${stat(data.totalBooks, 'Books')}
+        ${stat(data.totalOrders, 'Orders')}
+        ${stat(data.paidOrders, 'Paid orders')}
+        ${stat(data.freeDownloads, 'Free downloads')}
+        ${stat('$' + data.totalRevenue.toFixed(2), 'Revenue')}
+      `;
+    }
+    function stat(num, label) { return `<div class="stat"><div class="num">${num}</div><div class="label">${label}</div></div>`; }
+
+    // ---- books ----
+    async function loadBooks() {
+      const { data } = await api.get('/api/books');
+      const rows = data.books.map(b => `
+        <tr>
+          <td>${escapeHtml(b.title)}</td>
+          <td>${escapeHtml(b.author)}</td>
+          <td>${escapeHtml(b.category)}</td>
+          <td><span class="tag ${b.isFree ? 'tag-free' : 'tag-paid'}">${b.isFree ? 'Free' : money(b.price)}</span></td>
+          <td style="text-align:right">
+            <button class="btn btn-outline btn-sm" data-edit="${b.id}">Edit</button>
+            <button class="btn btn-rose btn-sm" data-del="${b.id}">Delete</button>
+          </td>
+        </tr>`).join('');
+      document.getElementById('tab-books').innerHTML = `
+        <div class="section-title"><h2 style="font-size:1.05rem">Catalog (${data.books.length})</h2>
+          <button class="btn btn-primary btn-sm" id="add-book">+ Add book</button>
+        </div>
+        <div class="panel"><table>
+          <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>Price</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+      document.getElementById('add-book').onclick = () => openBookForm();
+      document.querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => editBook(btn.dataset.edit, data.books));
+      document.querySelectorAll('[data-del]').forEach(btn => btn.onclick = () => deleteBook(btn.dataset.del));
+    }
+
+    function openBookForm(book) {
+      document.getElementById('book-form-title').textContent = book ? 'Edit book' : 'Add book';
+      document.getElementById('book-id').value = book ? book.id : '';
+      document.getElementById('f-title').value = book ? book.title : '';
+      document.getElementById('f-author').value = book ? book.author : '';
+      document.getElementById('f-category').value = book ? book.category : '';
+      document.getElementById('f-description').value = book ? book.description : '';
+      document.getElementById('f-content').value = book ? (book.content || '') : '';
+      document.getElementById('f-free').checked = book ? !!book.isFree : true;
+      document.getElementById('book-overlay').classList.add('open');
+    }
+    function editBook(id, books) { openBookForm(books.find(b => b.id === id)); }
+    document.getElementById('book-cancel').onclick = () => document.getElementById('book-overlay').classList.remove('open');
+    document.getElementById('book-save').onclick = async () => {
+      const id = document.getElementById('book-id').value;
+      const payload = {
+        title: document.getElementById('f-title').value.trim(),
+        author: document.getElementById('f-author').value.trim(),
+        category: document.getElementById('f-category').value.trim() || 'General',
+        description: document.getElementById('f-description').value.trim(),
+        content: document.getElementById('f-content').value,
+        isFree: document.getElementById('f-free').checked,
+      };
+      if (!payload.title || !payload.author) return alert('Title and author are required.');
+      const res = id ? await api.put(`/api/admin/books/${id}`, payload) : await api.post('/api/admin/books', payload);
+      if (!res.ok) return alert(res.data.error || 'Save failed');
+      document.getElementById('book-overlay').classList.remove('open');
+      loadBooks(); loadStats();
+    };
+    async function deleteBook(id) {
+      if (!confirm('Delete this book? This cannot be undone.')) return;
+      await api.del(`/api/admin/books/${id}`);
+      loadBooks(); loadStats();
+    }
+
+    // ---- users ----
+    async function loadUsers() {
+      const { data } = await api.get('/api/admin/users');
+      const rows = data.users.map(u => `
+        <tr>
+          <td>${escapeHtml(u.name)}</td>
+          <td>${escapeHtml(u.email)}</td>
+          <td>${escapeHtml(u.provider)}</td>
+          <td>${u.orders}</td>
+          <td>$${u.spent.toFixed(2)}</td>
+          <td><span class="tag ${u.role === 'admin' ? 'tag-paid' : 'tag-free'}">${u.role}</span></td>
+          <td style="text-align:right">
+            <button class="btn btn-outline btn-sm" data-toggle="${u.id}" data-role="${u.role === 'admin' ? 'user' : 'admin'}">
+              Make ${u.role === 'admin' ? 'user' : 'admin'}
+            </button>
+            <button class="btn btn-rose btn-sm" data-deluser="${u.id}">Delete</button>
+          </td>
+        </tr>`).join('');
+      document.getElementById('tab-users').innerHTML = `
+        <div class="panel"><table>
+          <thead><tr><th>Name</th><th>Email</th><th>Provider</th><th>Orders</th><th>Spent</th><th>Role</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+      document.querySelectorAll('[data-toggle]').forEach(btn => btn.onclick = async () => {
+        await api.post(`/api/admin/users/${btn.dataset.toggle}/role`, { role: btn.dataset.role });
+        loadUsers();
+      });
+      document.querySelectorAll('[data-deluser]').forEach(btn => btn.onclick = async () => {
+        if (!confirm('Delete this user?')) return;
+        await api.del(`/api/admin/users/${btn.dataset.deluser}`);
+        loadUsers(); loadStats();
+      });
+    }
+
+    // ---- orders ----
+    async function loadOrders() {
+      const { data } = await api.get('/api/admin/orders');
+      if (!data.orders.length) {
+        document.getElementById('tab-orders').innerHTML = `<div class="empty">No orders yet.</div>`;
+        return;
+      }
+      const rows = data.orders.map(o => `
+        <tr>
+          <td>${new Date(o.createdAt).toLocaleString()}</td>
+          <td>${escapeHtml(o.userName)}<br><span class="muted" style="font-size:.78rem">${escapeHtml(o.userEmail)}</span></td>
+          <td>${escapeHtml(o.bookTitle)}</td>
+          <td>${money(o.amount)}</td>
+          <td>${o.paywayRef ? `<span class="muted" style="font-size:.78rem">${o.paywayRef}</span>` : '—'}</td>
+          <td><span class="status-pill status-${o.status === 'completed' ? 'completed' : o.status === 'failed' ? 'failed' : 'pending'}">${o.status}</span></td>
+        </tr>`).join('');
+      document.getElementById('tab-orders').innerHTML = `
+        <div class="panel"><table>
+          <thead><tr><th>Date</th><th>Customer</th><th>Book</th><th>Amount</th><th>PayWay ref</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+    }
+
+    boot();
+  </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Books — Sabai Books</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a href="/" class="brand"><span class="mark">📖</span> Sabai Books</a>
+    <nav class="nav" id="nav-auth"></nav>
+  </div>
+
+  <main>
+    <h1>My Books</h1>
+    <p class="muted" style="margin-bottom:20px">Everything you own or have started reading, with your progress.</p>
+    <div id="app"><p class="muted">Loading…</p></div>
+  </main>
+
+  <script src="/app.js"></script>
+  <script>
+    window.onLoginSuccess = load;
+
+    async function load() {
+      const app = document.getElementById('app');
+      if (!CURRENT_USER) {
+        app.innerHTML = `<div class="empty">Log in to see your books.<br><br><button class="btn btn-primary" id="login-cta">Log in</button></div>`;
+        document.getElementById('login-cta').onclick = openLoginModal;
+        return;
+      }
+      const { data } = await api.get('/api/my-books');
+      if (!data.books.length) {
+        app.innerHTML = `<div class="empty">No books yet — <a href="/">browse the catalog</a> to get started.</div>`;
+        return;
+      }
+      app.innerHTML = `<div class="grid">${data.books.map(cardHtml).join('')}</div>`;
+    }
+
+    function cardHtml(b) {
+      return `
+        <a class="card" href="/book.html?id=${b.id}">
+          <div class="spine"><span class="cat">${escapeHtml(b.category)}</span></div>
+          <div class="card-body">
+            <h3>${escapeHtml(b.title)}</h3>
+            <div class="author">by ${escapeHtml(b.author)}</div>
+            <div class="progress-bar"><span style="width:${b.percent}%"></span></div>
+            <div class="badge-row"><span class="muted" style="font-size:.78rem">${b.percent}% complete</span></div>
+          </div>
+        </a>`;
+    }
+
+    (async () => { await initAuth(); load(); })();
+  </script>
+</body>
+</html>

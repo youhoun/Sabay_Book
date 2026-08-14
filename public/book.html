@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Book — Sabai Books</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a href="/" class="brand"><span class="mark">📖</span> Sabai Books</a>
+    <nav class="nav" id="nav-auth"></nav>
+  </div>
+
+  <main id="app"><p class="muted">Loading…</p></main>
+
+  <script src="/app.js"></script>
+  <script>
+    const bookId = new URLSearchParams(location.search).get('id');
+    let currentBook = null, currentOwned = false;
+
+    window.onLoginSuccess = render;
+
+    async function render() {
+      const { ok, data } = await api.get(`/api/books/${bookId}`);
+      const app = document.getElementById('app');
+      if (!ok) { app.innerHTML = `<div class="empty">Book not found.</div>`; return; }
+      currentBook = data.book; currentOwned = data.owned;
+      const b = currentBook;
+      const initial = b.title.trim()[0] || '?';
+
+      app.innerHTML = `
+        <div class="book-hero">
+          <div class="spine"><div class="initial">${escapeHtml(initial)}</div></div>
+          <div>
+            <div class="muted">${escapeHtml(b.category)}</div>
+            <h1>${escapeHtml(b.title)}</h1>
+            <div class="muted">by ${escapeHtml(b.author)}</div>
+            <div class="meta-row">
+              <span class="tag ${b.isFree ? 'tag-free' : 'tag-paid'}">${b.isFree ? 'Free' : 'Paid'}</span>
+              <span class="price-tag">${money(b.price)}</span>
+            </div>
+            <p>${escapeHtml(b.description)}</p>
+            <div id="cta"></div>
+          </div>
+        </div>
+        <div id="reader-area"></div>
+      `;
+
+      renderCta();
+      renderReader();
+    }
+
+    function renderCta() {
+      const cta = document.getElementById('cta');
+      if (currentOwned) {
+        cta.innerHTML = `<span class="status-pill status-completed">✓ You own this ${currentBook.isFree ? 'lesson' : 'book'}</span>`;
+        return;
+      }
+      if (!CURRENT_USER) {
+        cta.innerHTML = `<button class="btn btn-primary" id="cta-btn">Log in to ${currentBook.isFree ? 'read free' : 'buy for ' + money(currentBook.price)}</button>`;
+        document.getElementById('cta-btn').onclick = openLoginModal;
+        return;
+      }
+      cta.innerHTML = currentBook.isFree
+        ? `<button class="btn btn-teal" id="cta-btn">🆓 Get this lesson free</button>`
+        : `<button class="btn btn-primary" id="cta-btn">🛒 Buy for ${money(currentBook.price)}</button>`;
+      document.getElementById('cta-btn').onclick = startPurchase;
+    }
+
+    async function startPurchase() {
+      const btn = document.getElementById('cta-btn');
+      btn.disabled = true; btn.textContent = 'Please wait…';
+      const { ok, data } = await api.post('/api/orders', { bookId });
+      if (!ok) { alert(data.error || 'Something went wrong'); btn.disabled = false; return; }
+      if (data.redirect) {
+        location.href = data.redirect; // to the real ABA PayWay checkout
+      } else {
+        currentOwned = true; render();
+      }
+    }
+
+    function renderReader() {
+      const area = document.getElementById('reader-area');
+      if (currentOwned) {
+        area.innerHTML = `
+          <div class="section-title"><h2 style="font-size:1.1rem">Reading</h2>
+            <span class="muted" id="progress-label"></span>
+          </div>
+          <div class="progress-bar" style="margin-bottom:14px"><span id="progress-fill" style="width:0%"></span></div>
+          <div class="reader" id="reader-text">${escapeHtml(currentBook.content)}</div>
+          <div style="margin-top:16px;display:flex;gap:10px">
+            <button class="btn btn-outline btn-sm" id="mark-25">25%</button>
+            <button class="btn btn-outline btn-sm" id="mark-50">50%</button>
+            <button class="btn btn-outline btn-sm" id="mark-75">75%</button>
+            <button class="btn btn-teal btn-sm" id="mark-100">Mark finished</button>
+          </div>
+        `;
+        loadProgress();
+        [25, 50, 75, 100].forEach(p => {
+          document.getElementById(`mark-${p}`).onclick = () => setProgress(p);
+        });
+      } else {
+        area.innerHTML = `<div class="locked">🔒 ${currentBook.isFree ? 'Log in to unlock this free lesson.' : 'Purchase this book to start reading.'}</div>`;
+      }
+    }
+
+    async function loadProgress() {
+      if (!CURRENT_USER) return;
+      const { data } = await api.get(`/api/progress/${bookId}`);
+      updateProgressUI(data.percent || 0);
+    }
+    async function setProgress(pct) {
+      const { data } = await api.post('/api/progress', { bookId, percent: pct });
+      updateProgressUI(data.progress.percent);
+    }
+    function updateProgressUI(pct) {
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('progress-label').textContent = pct + '% complete';
+    }
+
+    (async () => { await initAuth(); render(); })();
+  </script>
+</body>
+</html>

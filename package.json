@@ -1,0 +1,14 @@
+{
+  "name": "sabai-books",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prototype bookstore with real Google/Facebook OAuth login and ABA PayWay integration.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {}
+}

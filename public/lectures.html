@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lectures — Sabai Books</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="topbar">
+  <a href="/" class="brand"><span class="mark">📖</span> Sabai Books</a>
+  <nav class="nav" id="nav-auth"></nav>
+</div>
+<main>
+  <div class="lecture-hero">
+    <div>
+      <h1>Lectures & Study Materials</h1>
+      <p class="muted">Browse the lecture PDFs added to Sabai Books. Free materials are available immediately; $0.25 materials are marked clearly.</p>
+    </div>
+    <a class="btn btn-outline" href="/">Back to books</a>
+  </div>
+  <div class="searchbar">
+    <input id="lecture-q" type="text" placeholder="Search lectures, subjects, or teachers…">
+    <div class="filters" id="lecture-filters">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="free">Free</button>
+      <button class="chip" data-filter="paid">$0.25</button>
+    </div>
+  </div>
+  <div id="lecture-grid" class="grid lecture-grid"></div>
+  <div id="lecture-empty" class="empty" style="display:none">No lectures match your search.</div>
+</main>
+<script src="/app.js"></script>
+<script src="/lectures-data.js"></script>
+<script>
+let filter='all';
+function lectureCard(x){
+  const badge=x.isFree?'Free':'$0.25';
+  return `<a class="card lecture-card" href="/lecture.html?id=${encodeURIComponent(x.id)}">
+    <div class="spine"><span class="cat">${escapeHtml(x.group)}</span></div>
+    <div class="card-body">
+      <h3>${escapeHtml(x.title)}</h3>
+      <div class="author">${escapeHtml(x.group)}</div>
+      <div class="badge-row"><span class="tag ${x.isFree?'tag-free':'tag-paid'}">${badge}</span></div>
+    </div>
+  </a>`;
+}
+function render(){
+  const q=document.getElementById('lecture-q').value.trim().toLowerCase();
+  const list=window.LECTURES.filter(x=>{
+    const text=(x.title+' '+x.group).toLowerCase();
+    const f=filter==='all'||(filter==='free'&&x.isFree)||(filter==='paid'&&!x.isFree);
+    return f && (!q||text.includes(q));
+  });
+  document.getElementById('lecture-grid').innerHTML=list.map(lectureCard).join('');
+  document.getElementById('lecture-empty').style.display=list.length?'none':'block';
+}
+document.getElementById('lecture-q').addEventListener('input',()=>render());
+document.querySelectorAll('#lecture-filters .chip').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#lecture-filters .chip').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); filter=b.dataset.filter; render();
+}));
+(async()=>{await initAuth();render();})();
+</script>
+</body>
+</html>

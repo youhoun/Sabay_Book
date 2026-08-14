@@ -1,0 +1,91 @@
+{
+  "users": [
+    {
+      "id": "91b76103-fb71-42f9-bd78-6361277756cd",
+      "name": "Admin Demo",
+      "email": "admin@example.com",
+      "provider": "google",
+      "role": "admin",
+      "createdAt": "2026-08-14T08:28:13.529Z"
+    },
+    {
+      "id": "b16ea88d-66ea-4f84-bdc5-6b6c0881e95c",
+      "name": "Sokha Reader",
+      "email": "sokha@example.com",
+      "provider": "facebook",
+      "role": "user",
+      "createdAt": "2026-08-14T08:28:13.529Z"
+    }
+  ],
+  "books": [
+    {
+      "id": "d6235f77-34e2-4fc7-a49a-87fec73cfe7c",
+      "title": "Khmer Folktales for Beginners",
+      "author": "Chan Dara",
+      "category": "Culture",
+      "description": "A short collection of classic Khmer folktales, retold for new readers.",
+      "isFree": true,
+      "price": 0,
+      "content": "Lesson 1: The Rabbit and the Crocodile\n\nLong ago, near the banks of the Mekong, a clever rabbit needed to cross the river...\n\n(Full free lesson content goes here.)",
+      "createdAt": "2026-08-14T08:28:13.529Z"
+    },
+    {
+      "id": "4db97bf7-87f1-4b2c-8380-64df2836f32e",
+      "title": "English for Everyday Life — Book 1",
+      "author": "Lina Sok",
+      "category": "Language",
+      "description": "Practical English phrases for shopping, travel, and daily conversation.",
+      "isFree": true,
+      "price": 0,
+      "content": "Lesson 1: Greetings\n\nHello! / Good morning! / How are you?\n\n(Full free lesson content goes here.)",
+      "createdAt": "2026-08-14T08:28:13.529Z"
+    },
+    {
+      "id": "441540c5-207e-4b97-a9f8-324c674c3b5a",
+      "title": "Startup Basics: From Idea to Launch",
+      "author": "Vireak Chea",
+      "category": "Business",
+      "description": "A practical primer on validating an idea, finding first customers, and shipping v1.",
+      "isFree": false,
+      "price": 0.5,
+      "content": "Chapter 1: Talk to 10 people before you write a line of code...\n\n(Full paid content unlocked after purchase.)",
+      "createdAt": "2026-08-14T08:28:13.529Z"
+    },
+    {
+      "id": "cafcf56d-1d23-4bae-b936-2ec1c45bcfdd",
+      "title": "Cooking with Khmer Herbs",
+      "author": "Sreymom Pich",
+      "category": "Cooking",
+      "description": "A short recipe book focused on the herbs and pastes behind everyday Khmer cooking.",
+      "isFree": false,
+      "price": 0.5,
+      "content": "Recipe 1: Kroeung paste basics...\n\n(Full paid content unlocked after purchase.)",
+      "createdAt": "2026-08-14T08:28:13.529Z"
+    },
+    {
+      "id": "a18c47b4-3e67-4e13-b7c6-62bb703492d9",
+      "title": "Personal Finance for Young Professionals",
+      "author": "Sopheak Ly",
+      "category": "Finance",
+      "description": "Budgeting, saving, and the first steps toward investing — written for a first paycheck.",
+      "isFree": false,
+      "price": 0.5,
+      "content": "Chapter 1: Pay yourself first...\n\n(Full paid content unlocked after purchase.)",
+      "createdAt": "2026-08-14T08:28:13.529Z"
+    },
+    {
+      "id": "bff52cc4-f9e7-4668-8eaf-3574d9848cf0",
+      "title": "Introduction to Khmer Proverbs",
+      "author": "Chan Dara",
+      "category": "Culture",
+      "description": "Twenty everyday proverbs explained with stories and modern context.",
+      "isFree": true,
+      "price": 0,
+      "content": "Proverb 1: \"Small river, big fish\" — meaning and a short story...\n\n(Full free lesson content goes here.)",
+      "createdAt": "2026-08-14T08:28:13.529Z"
+    }
+  ],
+  "orders": [],
+  "purchases": [],
+  "progress": []
+}

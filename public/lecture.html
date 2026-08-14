@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecture — Sabai Books</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="topbar"><a href="/" class="brand"><span class="mark">📖</span> Sabai Books</a><nav class="nav" id="nav-auth"></nav></div>
+<main>
+  <div id="lecture-head" class="lecture-view-head"></div>
+  <div class="pdf-wrap" id="pdf-wrap"></div>
+</main>
+<script src="/app.js"></script>
+<script src="/lectures-data.js"></script>
+<script>
+(async()=>{
+  await initAuth();
+  const id=new URLSearchParams(location.search).get('id');
+  const x=window.LECTURES.find(v=>v.id===id);
+  if(!x){document.getElementById('lecture-head').innerHTML='<div class="empty">Lecture not found.</div>';return;}
+  document.title=x.title+' — Sabai Books';
+  document.getElementById('lecture-head').innerHTML=`
+    <div><a class="muted" href="/lectures.html">← All lectures</a>
+    <h1>${escapeHtml(x.title)}</h1><p class="muted">${escapeHtml(x.group)} · ${x.isFree?'Free':'$0.25'}</p></div>
+    <a class="btn btn-outline" href="${x.file}" target="_blank" rel="noopener">Open PDF</a>`;
+  document.getElementById('pdf-wrap').innerHTML=`<iframe class="pdf-viewer" src="${x.file}#view=FitH" title="${escapeHtml(x.title)}"></iframe>`;
+})();
+</script>
+</body>
+</html>

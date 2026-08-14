@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Checkout — Sabai Books</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a href="/" class="brand"><span class="mark">📖</span> Sabai Books</a>
+    <nav class="nav" id="nav-auth"></nav>
+  </div>
+
+  <main style="max-width:480px">
+    <div id="app"><p class="muted">Loading order…</p></div>
+  </main>
+
+  <script src="/app.js"></script>
+  <script>
+    const orderId = new URLSearchParams(location.search).get('order');
+    let timer = null;
+
+    function statusHtml(order, book) {
+      const map = {
+        completed: { icon: '✅', title: 'Payment successful', cls: 'status-completed', text: 'Your book is now unlocked.' },
+        failed: { icon: '❌', title: 'Payment failed', cls: 'status-failed', text: 'The payment was not completed. You can try again.' },
+        pending: { icon: '⏳', title: 'Payment processing', cls: 'status-pending', text: 'We are checking the real ABA PayWay transaction status.' },
+      };
+      const s = map[order.status] || map.pending;
+      return `
+        <div class="panel" style="text-align:center">
+          <div style="font-size:2.4rem">${s.icon}</div>
+          <h2>${s.title}</h2>
+          <p class="muted">${escapeHtml(book.title)} — ${money(order.amount)}</p>
+          <span class="status-pill ${s.cls}">${escapeHtml(order.status)}</span>
+          <p class="muted" style="margin-top:14px">${s.text}</p>
+          <div style="margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            ${order.status === 'completed' ? `<a class="btn btn-primary" href="/book.html?id=${book.id}">Start reading</a>` : ''}
+            ${order.status !== 'completed' ? `<a class="btn btn-teal" href="/payway/checkout/${encodeURIComponent(order.id)}">Open ABA PayWay</a>` : ''}
+            <a class="btn btn-outline" href="/mybooks.html">My Books</a>
+          </div>
+        </div>`;
+    }
+
+    async function render() {
+      if (!orderId) {
+        document.getElementById('app').innerHTML = '<div class="empty">Missing order.</div>';
+        return;
+      }
+      const { ok, data } = await api.get(`/api/orders/${encodeURIComponent(orderId)}`);
+      const app = document.getElementById('app');
+      if (!ok) { app.innerHTML = `<div class="empty">Order not found.</div>`; return; }
+      const { order, book } = data;
+      app.innerHTML = statusHtml(order, book);
+
+      if (order.status === 'pending') {
+        clearInterval(timer);
+        timer = setInterval(refreshPayment, 2500);
+      } else {
+        clearInterval(timer);
+      }
+    }
+
+    async function refreshPayment() {
+      const { ok } = await api.post(`/api/orders/${encodeURIComponent(orderId)}/refresh-payment`, {});
+      if (ok) await render();
+    }
+
+    (async () => { await initAuth(); await render(); })();
+  </script>
+</body>
+</html>
